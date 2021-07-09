@@ -1,19 +1,31 @@
-extern crate cascade;
-
 use gtk::prelude::*;
-use std::process;
+use gtk::{Application, ApplicationWindow, Box, Button, Label};
 
-fn main() {
-    // Set application names
-    glib::set_program_name(Some("First GTK App"));
-    glib::set_application_name("First GTK App");
+fn main()
+{
+    let application = Application::new(Some("com.github.jakeguy11.rust-app"), gio::ApplicationFlags::FLAGS_NONE);
 
-    // Exit if init failed
-    if gtk::init().is_err() {
-        eprintln!("failed to initialize GTK Application");
-        process::exit(1);
-    }
+    application.connect_activate(|app|
+    {
+        let window = ApplicationWindow::new(app);
+        window.set_title("My actual window title");
+        window.set_default_size(800, 600);
 
-    // Run gtk's main function - will wait until app is exited
-    gtk::main();
+        let container = Box::new(gtk::Orientation::Vertical, 10);
+        let label = Label::new(Some("Default label text"));
+        let button = Button::with_label("I am a button");
+
+        container.add(&label);
+        container.add(&button);
+        window.add(&container);
+
+        button.connect_clicked(move |_|
+        {
+            &label.set_label("You clicked me!");
+        });
+
+        window.show_all();
+    });
+
+    application.run();
 }
