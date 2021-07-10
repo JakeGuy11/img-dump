@@ -21,9 +21,9 @@ fn main()
         container.add(&button);
         window.add(&container);
 
-        input_text.connect_activate(move |_|
+        input_text.connect_activate(move |entry_field|
         {
-            let entered_text = &input_text.text();
+            let entered_text = &entry_field.text();
             &label.set_label(entered_text.as_str());
         });
 
