@@ -4,6 +4,18 @@ use gtk::{Application, ApplicationWindow, Box, Entry, Button, Label};
 
 fn main()
 {
+    // Create some (sort of) globals that we'll need to use/access
+    let mut target_path = std::env::current_dir().expect("Failed to get current directory!").as_path();
+
+    // First parse all the cli args
+    let args: Vec<String> = std::env::args().skip(1).collect();
+
+    // If there are no args, assume they wanna keep using the current dir
+    if args.len() != 0
+    {
+        if args[0].as_str() == "--help" || args[0].as_str() == "-h" { println! ("Help message will go here!"); }
+    }
+
     let application = Application::new(Some("com.github.jakeguy11.img-dump"), gio::ApplicationFlags::FLAGS_NONE);
 
     application.connect_activate(|app|
@@ -106,5 +118,5 @@ fn main()
         window.show_all();
     });
     
-    application.run();
+    application.run_with_args::<String>(&[]);
 }
