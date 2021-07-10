@@ -4,13 +4,13 @@ use gtk::{Application, ApplicationWindow, Box, Entry, Button, Label};
 
 fn main()
 {
-    let application = Application::new(Some("com.github.jakeguy11.rust-app"), gio::ApplicationFlags::FLAGS_NONE);
+    let application = Application::new(Some("com.github.jakeguy11.img-dump"), gio::ApplicationFlags::FLAGS_NONE);
 
     application.connect_activate(|app|
     {
-        let window = ApplicationWindow::new(app);
-        window.set_title("My actual window title");
-        window.set_default_size(800, 600);
+        let mut window = ApplicationWindow::new(app);
+        window.set_title("img-dump");
+        window = ApplicationWindow::builder().resizable(false).build();
 
         // Here we will define all the widgets and set their properties
 
@@ -94,17 +94,17 @@ fn main()
 
         user_entry.connect_activate(move |entry_field|
         {
-            let entered_text = format! ("{}", &entry_field.alignment());
+            let entered_text = &entry_field.text();
             &label.set_label(entered_text.as_str());
         });
 
-        exit_button.connect_clicked(move |_|
+        exit_button.connect_clicked(|_|
         {
             std::process::exit(0);
         });
 
         window.show_all();
     });
-
+    
     application.run();
 }
