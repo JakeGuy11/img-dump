@@ -1,11 +1,56 @@
 use gtk::prelude::*;
 use gtk::Align::{Start, End, Fill};
 use gtk::{Application, ApplicationWindow, Box, Entry, Button, Label};
+use std::path::PathBuf;
+use std::ffi::OsString;
+
+// An enum for "does not exist" vs "out of images" vs
+//enum ReasonForFail
+//{
+//    DoesNotExist,
+//    OutOfImages,
+//    OtherError
+//}
+
+fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) -> Result<(), ()>
+{
+    // Clear the vector
+    target_vec.clear();
+
+    for current_item in std::fs::read_dir(target_path.as_path()).expect("Failed to read target dir!")
+    {
+        // Do some checks to make sure we want to add this entry
+        if let Err(e) = current_item { eprintln! ("Failed to parse item in target dir: {}", e); continue; }
+
+        // If it's not an error, we can unwrap it and do whatever we need to
+        let item_path = current_item.unwrap().path();
+        
+        // Check if it's a directory or unsupported filetype
+        if item_path.is_dir() { continue; }
+
+        if item_path.extension() == Some(&OsString::from("jpg")) { target_vec.push(item_path); }
+        else if item_path.extension() == Some(&OsString::from("jpeg")) { target_vec.push(item_path); }
+        else if item_path.extension() == Some(&OsString::from("png")) { target_vec.push(item_path); }
+        else if item_path.extension() == Some(&OsString::from("bmp")) { target_vec.push(item_path); }
+        else if item_path.extension() == Some(&OsString::from("gif")) { target_vec.push(item_path); }
+    }
+
+    // If there are no files to go through, return an error
+    if target_vec.is_empty() { Err(()) }
+    else { Ok(()) }
+}
+
+//fn update_image(target_image: &mut ) -> Result<(), ReasonForFail>
+//{
+    
+//    Err(ReasonForFail::OtherError)
+//}
 
 fn main()
 {
     // Create some (sort of) globals that we'll need to use/access
-    let mut target_path = std::env::current_dir().expect("Failed to get current directory!").as_path();
+    let mut target_path = std::env::current_dir().expect("Failed to get current directory!");
+    let mut images_vec = Vec::new();
 
     // First parse all the cli args
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -14,11 +59,19 @@ fn main()
     if args.len() != 0
     {
         if args[0].as_str() == "--help" || args[0].as_str() == "-h" { println! ("Help message will go here!"); }
+        else
+        {
+            target_path = std::path::PathBuf::from(args[0].to_string());
+        }
     }
+
+    let populate_result = populate_pathbuf_vec(&mut images_vec, &target_path);
+    if let Err(_) = populate_result { eprintln! ("There are no valid images in the targeted directory!"); std::process::exit(1); }
+    println! ("{:?}", &images_vec);
 
     let application = Application::new(Some("com.github.jakeguy11.img-dump"), gio::ApplicationFlags::FLAGS_NONE);
 
-    application.connect_activate(|app|
+    application.connect_activate(move |app|
     {
         let mut window = ApplicationWindow::new(app);
         window.set_title("img-dump");
@@ -71,7 +124,7 @@ fn main()
         open_dir_button.set_halign(Fill);
 
         // Define the image that will display the current item
-        let display_image = gtk::Image::from_file(std::path::Path::new("/home/jake/downloads/polka.png")); // This is just a test image - it will be updated eventually to each file in the current dir
+        let display_image = gtk::Image::from_file(&target_path.as_path()); // This is just a test image - it will be updated eventually to each file in the current dir
         display_image.set_valign(Fill);
         display_image.set_halign(Fill);
 
