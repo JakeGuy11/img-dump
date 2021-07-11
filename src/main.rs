@@ -5,12 +5,11 @@ use std::path::PathBuf;
 use std::ffi::OsString;
 
 // An enum for "does not exist" vs "out of images" vs
-//enum ReasonForFail
-//{
-//    DoesNotExist,
-//    OutOfImages,
-//    OtherError
-//}
+enum ReasonForFail
+{
+    DoesNotExist,
+    OutOfImages
+}
 
 fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) -> Result<(), ()>
 {
@@ -40,17 +39,26 @@ fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) ->
     else { Ok(()) }
 }
 
-//fn update_image(target_image: &mut ) -> Result<(), ReasonForFail>
-//{
+fn update_image(target_image: &gtk::Image, mut image_vec: Vec<PathBuf>) -> Result<(), ReasonForFail>
+{
+    // Get the last item from the vector
+    let wrapped_image_to_update = image_vec.pop();
     
-//    Err(ReasonForFail::OtherError)
-//}
+    // Check for potential problems - no more images, deleted images for now
+    if let None = wrapped_image_to_update { println! ("Out of images!"); return Err(ReasonForFail::OutOfImages); }
+    let image_to_update = wrapped_image_to_update.unwrap();
+    if !image_to_update.exists() { eprintln! ("Current image does not exist!"); return Err(ReasonForFail::DoesNotExist); }
+
+    // We've checked for errors - now do what we need to with the image
+    target_image.set_from_file(image_to_update.as_path());
+
+    Ok(())
+}
 
 fn main()
 {
     // Create some (sort of) globals that we'll need to use/access
     let mut target_path = std::env::current_dir().expect("Failed to get current directory!");
-    let mut images_vec = Vec::new();
 
     // First parse all the cli args
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -65,14 +73,17 @@ fn main()
         }
     }
 
-    let populate_result = populate_pathbuf_vec(&mut images_vec, &target_path);
-    if let Err(_) = populate_result { eprintln! ("There are no valid images in the targeted directory!"); std::process::exit(1); }
-    println! ("{:?}", &images_vec);
-
     let application = Application::new(Some("com.github.jakeguy11.img-dump"), gio::ApplicationFlags::FLAGS_NONE);
 
     application.connect_activate(move |app|
     {
+        // Create the vector of the images
+        let mut images_vec = Vec::new();
+
+        let populate_result = populate_pathbuf_vec(&mut images_vec, &target_path);
+        if let Err(_) = populate_result { eprintln! ("There are no valid images in the targeted directory!"); std::process::exit(1); }
+        println! ("{:?}", &images_vec);
+
         let mut window = ApplicationWindow::new(app);
         window.set_title("img-dump");
         window = ApplicationWindow::builder().resizable(false).build();
@@ -157,16 +168,20 @@ fn main()
         
         window.add(&base_container);
 
-        user_entry.connect_activate(move |entry_field|
-        {
-            let entered_text = &entry_field.text();
-            &label.set_label(entered_text.as_str());
+        user_entry.connect_activate({
+            move |entry_field|
+            {
+                update_image(&display_image, images_vec.clone());
+            }
         });
 
         exit_button.connect_clicked(|_|
         {
             std::process::exit(0);
         });
+
+        // Update the image once
+        // update_image(&display_image, &mut images_vec);
 
         window.show_all();
     });
