@@ -3,6 +3,7 @@ use gtk::Align::{Start, End, Fill};
 use gtk::{Application, ApplicationWindow, Box, Entry, Button, Label};
 use std::path::PathBuf;
 use std::ffi::OsString;
+use std::cell::RefCell;
 
 // An enum for "does not exist" vs "out of images" vs
 enum ReasonForFail
@@ -39,15 +40,16 @@ fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) ->
     else { Ok(()) }
 }
 
-fn update_image(target_image: &gtk::Image, mut image_vec: Vec<PathBuf>) -> Result<(), ReasonForFail>
+fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathBuf>>) -> Result<(), ReasonForFail>
 {
+
     // Get the last item from the vector
-    let wrapped_image_to_update = image_vec.pop();
+    let wrapped_image_to_update = image_vec_refcell.borrow_mut().pop();
     
     // Check for potential problems - no more images, deleted images for now
-    if let None = wrapped_image_to_update { println! ("Out of images!"); return Err(ReasonForFail::OutOfImages); }
+    if let None = wrapped_image_to_update { return Err(ReasonForFail::OutOfImages); }
     let image_to_update = wrapped_image_to_update.unwrap();
-    if !image_to_update.exists() { eprintln! ("Current image does not exist!"); return Err(ReasonForFail::DoesNotExist); }
+    if !image_to_update.exists() { return Err(ReasonForFail::DoesNotExist); }
 
     // We've checked for errors - now do what we need to with the image
     target_image.set_from_file(image_to_update.as_path());
@@ -78,9 +80,9 @@ fn main()
     application.connect_activate(move |app|
     {
         // Create the vector of the images
-        let mut images_vec = Vec::new();
+        let images_vec = RefCell::new(Vec::new());
 
-        let populate_result = populate_pathbuf_vec(&mut images_vec, &target_path);
+        let populate_result = populate_pathbuf_vec(&mut images_vec.borrow_mut(), &target_path);
         if let Err(_) = populate_result { eprintln! ("There are no valid images in the targeted directory!"); std::process::exit(1); }
         println! ("{:?}", &images_vec);
 
@@ -168,10 +170,14 @@ fn main()
         
         window.add(&base_container);
 
+        // Update the image once
+        update_image(&display_image, &images_vec);
+
         user_entry.connect_activate({
+            let image_to_set = display_image.clone();
             move |entry_field|
             {
-                update_image(&display_image, images_vec.clone());
+                update_image(&image_to_set, &images_vec);
             }
         });
 
@@ -179,9 +185,6 @@ fn main()
         {
             std::process::exit(0);
         });
-
-        // Update the image once
-        // update_image(&display_image, &mut images_vec);
 
         window.show_all();
     });
