@@ -214,25 +214,18 @@ fn main()
             let ownable_current_image = Rc::clone(&current_image);
             move |entry_field|
             {
-                // First try to do what the user wants to do with the image
+                // Get the path where they want to set the image
                 let target_path = String::from(entry_field.text().as_str());
 
                 // If the user just enters '-', do nothing with the image
                 if target_path == String::from("-") { println! ("Skipping image"); }
                 // If the user leaves the field empty, assume they just wanna delete the image
-                else if target_path == String::from("")
-                {
-                    // Get the path of the current image
-
-                    // Delete that image
-
-                }
+                else if target_path == String::from("") { std::fs::remove_file(ownable_current_image.borrow().as_path()).expect("Failed to delete current image!"); }
                 // If it gets here, it's a normal entry
-                else
-                {
-                    move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str()));
-                }
+                else { move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str())); }
 
+                // Clear the text field
+                entry_field.set_text("");
 
                 // Assuming we make it here, update the image
                 loop
@@ -243,7 +236,7 @@ fn main()
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
                     if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); }
+                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); break; }
                 }
             }
         });
@@ -254,6 +247,20 @@ fn main()
             let ownable_current_image = Rc::clone(&current_image);
             move |_|
             {
+                // Get the path where they want to set the image
+                let target_path = String::from((&user_entry).text().as_str());
+
+                // If the user just enters '-', do nothing with the image
+                if target_path == String::from("-") { println! ("Skipping image"); }
+                // If the user leaves the field empty, assume they just wanna delete the image
+                else if target_path == String::from("") { std::fs::remove_file(ownable_current_image.borrow().as_path()).expect("Failed to delete current image!"); }
+                // If it gets here, it's a normal entry
+                else { move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str())); }
+
+                // Clear the text field
+                (&user_entry).set_text("");
+
+                // Assuming we make it here, update the image
                 loop
                 {
                     // Try to update the image
@@ -262,7 +269,7 @@ fn main()
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
                     if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); }
+                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); break; }
                 }
             }
         });
@@ -275,7 +282,7 @@ fn main()
             // Check what the result is and handle it
             if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
             if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-            if let Ok(returned_img) = update_result { current_image.replace(returned_img); }
+            if let Ok(returned_img) = update_result { current_image.replace(returned_img); break; }
         }
 
         exit_button.connect_clicked(|_|
