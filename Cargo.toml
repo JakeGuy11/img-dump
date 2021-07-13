@@ -8,3 +8,4 @@ edition="2018"
 [dependencies]
 gio="0.14.0"
 gtk="0.14.0"
+gdk-pixbuf="0.14.0"

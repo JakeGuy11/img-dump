@@ -41,7 +41,7 @@ fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) ->
     else { Ok(()) }
 }
 
-fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathBuf>>) -> Result<(), ReasonForFail>
+fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathBuf>>, max_dimension: i32) -> Result<(), ReasonForFail>
 {
 
     // Get the last item from the vector
@@ -51,9 +51,12 @@ fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathB
     if let None = wrapped_image_to_update { return Err(ReasonForFail::OutOfImages); }
     let image_to_update = wrapped_image_to_update.unwrap();
     if !image_to_update.exists() { return Err(ReasonForFail::DoesNotExist); }
+    
+    // Create a PixBuf to normalize the image size
+    let img_to_set = gdk_pixbuf::Pixbuf::from_file_at_scale(image_to_update.as_path(), max_dimension, max_dimension, true).expect("Failed to open file into PixBuf!");
 
     // We've checked for errors - now do what we need to with the image
-    target_image.set_from_file(image_to_update.as_path());
+    target_image.set_from_pixbuf(Some(&img_to_set));
 
     Ok(())
 }
@@ -67,6 +70,7 @@ fn main()
 {
     // Create some (sort of) globals that we'll need to use/access
     let mut target_path = std::env::current_dir().expect("Failed to get current directory!");
+    let image_size = 600; // This will eventually become a cli arg
 
     // First parse all the cli args
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -187,7 +191,7 @@ fn main()
                 loop
                 {
                     // Try to update the image
-                    let update_result = update_image(&image_to_set, &ownable_images_vec);
+                    let update_result = update_image(&image_to_set, &ownable_images_vec, image_size);
                     
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
@@ -205,7 +209,7 @@ fn main()
                 loop
                 {
                     // Try to update the image
-                    let update_result = update_image(&image_to_set, &ownable_images_vec);
+                    let update_result = update_image(&image_to_set, &ownable_images_vec, image_size);
                     
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
@@ -218,7 +222,7 @@ fn main()
         loop
         {
             // Try to update the image
-            let update_result = update_image(&display_image, &images_vec);
+            let update_result = update_image(&display_image, &images_vec, image_size);
             
             // Check what the result is and handle it
             if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
