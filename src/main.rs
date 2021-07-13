@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use std::ffi::OsString;
 use std::cell::RefCell;
 use std::cell::RefMut;
-use std::rc::Rc;
 
 // An enum for "does not exist" vs "out of images" vs
 enum ReasonForFail
