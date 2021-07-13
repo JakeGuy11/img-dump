@@ -222,7 +222,12 @@ fn main()
                 // If the user leaves the field empty, assume they just wanna delete the image
                 else if target_path == String::from("") { std::fs::remove_file(ownable_current_image.borrow().as_path()).expect("Failed to delete current image!"); }
                 // If it gets here, it's a normal entry
-                else { move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str())); }
+                else {
+                    let move_result = move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str()));
+                    if let Err(ReasonForFail::NoPermission) = move_result { eprintln! ("You do not have the proper permissions to work with the files! Try running as root."); return; }
+                    else if let Err(ReasonForFail::DoesNotExist) = move_result { eprintln! ("That image no longer exists!"); }
+                    else if let Err(_) = move_result { eprintln! ("Encountered an unknown errror - exiting!"); std::process::exit(1); }
+                }
 
                 // Clear the text field
                 entry_field.set_text("");
@@ -255,7 +260,12 @@ fn main()
                 // If the user leaves the field empty, assume they just wanna delete the image
                 else if target_path == String::from("") { std::fs::remove_file(ownable_current_image.borrow().as_path()).expect("Failed to delete current image!"); }
                 // If it gets here, it's a normal entry
-                else { move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str())); }
+                else {
+                    let move_result = move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str()));
+                    if let Err(ReasonForFail::NoPermission) = move_result { eprintln! ("You do not have the proper permissions to work with the files! Try running as root."); return; }
+                    else if let Err(ReasonForFail::DoesNotExist) = move_result { eprintln! ("That image no longer exists!"); }
+                    else if let Err(_) = move_result { eprintln! ("Encountered an unknown errror - exiting!"); std::process::exit(1); }
+                }
 
                 // Clear the text field
                 (&user_entry).set_text("");
