@@ -4,6 +4,8 @@ use gtk::{Application, ApplicationWindow, Box, Entry, Button, Label};
 use std::path::PathBuf;
 use std::ffi::OsString;
 use std::cell::RefCell;
+use std::cell::RefMut;
+use std::rc::Rc;
 
 // An enum for "does not exist" vs "out of images" vs
 enum ReasonForFail
@@ -149,7 +151,7 @@ fn main()
         // Now we add all the widgets to boxes
         
         // Add the two buttons to their container
-        user_buttons_container.add(&accept_button);
+        // user_buttons_container.add(&accept_button);
         user_buttons_container.add(&open_dir_button);
         
         // Add the Entry and the button box to the entry container
@@ -171,7 +173,7 @@ fn main()
         window.add(&base_container);
 
         // Update the image once
-        update_image(&display_image, &images_vec);
+        // update_image(&display_image, &images_vec);
 
         user_entry.connect_activate({
             let image_to_set = display_image.clone();
@@ -180,6 +182,8 @@ fn main()
                 update_image(&image_to_set, &images_vec);
             }
         });
+        
+        update_image(&display_image, &images_vec);
 
         exit_button.connect_clicked(|_|
         {
