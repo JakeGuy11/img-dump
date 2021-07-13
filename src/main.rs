@@ -42,7 +42,7 @@ fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) ->
     else { Ok(()) }
 }
 
-fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathBuf>>, max_dimension: i32) -> Result<(), ReasonForFail>
+fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathBuf>>, max_dimension: i32) -> Result<PathBuf, ReasonForFail>
 {
 
     // Get the last item from the vector
@@ -59,7 +59,7 @@ fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathB
     // We've checked for errors - now do what we need to with the image
     target_image.set_from_pixbuf(Some(&img_to_set));
 
-    Ok(())
+    Ok(image_to_update)
 }
 
 fn move_image(file_to_move: &PathBuf, target_path: &mut PathBuf) -> Result<(), ReasonForFail>
@@ -116,6 +116,9 @@ fn main()
     {
         // Create the vector of the images
         let images_vec = Rc::new(RefCell::new(Vec::new()));
+
+        // Create a new file that will hold whatever file is currently in the image
+        let current_image = Rc::new(RefCell::new(PathBuf::new()));
 
         let populate_result = populate_pathbuf_vec(&mut images_vec.borrow_mut(), &target_path);
         if let Err(_) = populate_result { eprintln! ("There are no valid images in the targeted directory!"); std::process::exit(1); }
@@ -208,8 +211,30 @@ fn main()
         user_entry.connect_activate({
             let image_to_set = display_image.clone();
             let ownable_images_vec = Rc::clone(&images_vec);
+            let ownable_current_image = Rc::clone(&current_image);
             move |entry_field|
             {
+                // First try to do what the user wants to do with the image
+                let target_path = String::from(entry_field.text().as_str());
+
+                // If the user just enters '-', do nothing with the image
+                if target_path == String::from("-") { println! ("Skipping image"); }
+                // If the user leaves the field empty, assume they just wanna delete the image
+                else if target_path == String::from("")
+                {
+                    // Get the path of the current image
+
+                    // Delete that image
+
+                }
+                // If it gets here, it's a normal entry
+                else
+                {
+                    move_image(&ownable_current_image.borrow(), &mut PathBuf::from(target_path.as_str()));
+                }
+
+
+                // Assuming we make it here, update the image
                 loop
                 {
                     // Try to update the image
@@ -218,7 +243,7 @@ fn main()
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
                     if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-                    if let Ok(_) = update_result { break; }
+                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); }
                 }
             }
         });
@@ -226,6 +251,7 @@ fn main()
         accept_button.connect_clicked({
             let image_to_set = display_image.clone();
             let ownable_images_vec = Rc::clone(&images_vec);
+            let ownable_current_image = Rc::clone(&current_image);
             move |_|
             {
                 loop
@@ -236,7 +262,7 @@ fn main()
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
                     if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-                    if let Ok(_) = update_result { break; }
+                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); }
                 }
             }
         });
@@ -249,7 +275,7 @@ fn main()
             // Check what the result is and handle it
             if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
             if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-            if let Ok(_) = update_result { break; }
+            if let Ok(returned_img) = update_result { current_image.replace(returned_img); }
         }
 
         exit_button.connect_clicked(|_|
