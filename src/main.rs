@@ -240,8 +240,9 @@ fn main()
                     
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
-                    if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); break; }
+                    else if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
+                    else if let Err(_) = update_result { eprintln! ("Encountered unknown error - exiting!"); std::process::exit(1); }
+                    else if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); break; }
                 }
             }
         });
@@ -278,8 +279,9 @@ fn main()
                     
                     // Check what the result is and handle it
                     if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
-                    if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-                    if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); break; }
+                    else if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
+                    else if let Err(_) = update_result { eprintln! ("Encountered unknown error - exiting!"); std::process::exit(1); }
+                    else if let Ok(returned_img) = update_result { ownable_current_image.replace(returned_img); break; }
                 }
             }
         });
@@ -291,8 +293,9 @@ fn main()
             
             // Check what the result is and handle it
             if let Err(ReasonForFail::OutOfImages) = update_result { eprintln! ("Out of images! Select a new directory!"); break; }
-            if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
-            if let Ok(returned_img) = update_result { current_image.replace(returned_img); break; }
+            else if let Err(ReasonForFail::DoesNotExist) = update_result { eprintln! ("Current image does not exist!"); }
+            else if let Err(_) = update_result { eprintln! ("Encountered an unknown error - exiting!"); std::process::exit(1); }
+            else if let Ok(returned_img) = update_result { current_image.replace(returned_img); break; }
         }
 
         exit_button.connect_clicked(|_|
@@ -305,3 +308,4 @@ fn main()
     
     application.run_with_args::<String>(&[]);
 }
+
