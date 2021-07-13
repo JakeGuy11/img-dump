@@ -188,7 +188,7 @@ fn main()
         
         // Add the two buttons to their container
         user_buttons_container.add(&accept_button);
-        user_buttons_container.add(&open_dir_button);
+        //user_buttons_container.add(&open_dir_button);
         
         // Add the Entry and the button box to the entry container
         entry_container.pack_start(&user_entry, true, true, 10);
