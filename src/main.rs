@@ -6,11 +6,12 @@ use std::ffi::OsString;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-// An enum for "does not exist" vs "out of images" vs
+// An enum for "does not exist" vs "out of images"
 enum ReasonForFail
 {
     DoesNotExist,
-    OutOfImages
+    OutOfImages,
+    NoPermission
 }
 
 fn populate_pathbuf_vec(target_vec: &mut Vec<PathBuf>, target_path: &PathBuf) -> Result<(), ()>
@@ -61,8 +62,32 @@ fn update_image(target_image: &gtk::Image, image_vec_refcell: &RefCell<Vec<PathB
     Ok(())
 }
 
-fn move_image() -> Result<(), ReasonForFail>
+fn move_image(file_to_move: &PathBuf, target_path: &mut PathBuf) -> Result<(), ReasonForFail>
 {
+    // Make sure the file exists
+    if !file_to_move.exists() { return Err(ReasonForFail::DoesNotExist); }
+
+    // Clone the target PathBuf the target path
+    let mut target_dir = target_path.clone();
+    // Remove the file from the target
+    target_dir.pop();
+
+    // Get the extension and put it on the target
+    let src_ext = file_to_move.extension().expect("Could not extract source extension!");
+    target_path.set_extension(src_ext);
+
+    // Create the target dir if it doesn't exist
+    let create_dir_res = std::fs::create_dir_all(target_dir.as_path());
+    if let Err(_) = create_dir_res { return Err(ReasonForFail::NoPermission); }
+
+    // Copy the actual file
+    let copy_res = std::fs::copy(&file_to_move, target_path);
+    if let Err(_) = copy_res { return Err(ReasonForFail::NoPermission); }
+
+    // Remove the original
+    let remove_res = std::fs::remove_file(file_to_move);
+    if let Err(_) = remove_res { return Err(ReasonForFail::NoPermission); }
+
     Ok(())
 }
 
@@ -179,9 +204,6 @@ fn main()
         base_container.add(&exit_container);
         
         window.add(&base_container);
-
-        // Update the image once
-        // update_image(&display_image, &images_vec);
 
         user_entry.connect_activate({
             let image_to_set = display_image.clone();
