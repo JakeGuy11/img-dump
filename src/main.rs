@@ -4,7 +4,7 @@ use gtk::{Application, ApplicationWindow, Box, Entry, Button, Label};
 use std::path::PathBuf;
 use std::ffi::OsString;
 use std::cell::RefCell;
-use std::cell::RefMut;
+use std::rc::Rc;
 
 // An enum for "does not exist" vs "out of images" vs
 enum ReasonForFail
@@ -81,7 +81,7 @@ fn main()
     application.connect_activate(move |app|
     {
         // Create the vector of the images
-        let images_vec = RefCell::new(Vec::new());
+        let images_vec = Rc::new(RefCell::new(Vec::new()));
 
         let populate_result = populate_pathbuf_vec(&mut images_vec.borrow_mut(), &target_path);
         if let Err(_) = populate_result { eprintln! ("There are no valid images in the targeted directory!"); std::process::exit(1); }
@@ -150,7 +150,7 @@ fn main()
         // Now we add all the widgets to boxes
         
         // Add the two buttons to their container
-        // user_buttons_container.add(&accept_button);
+        user_buttons_container.add(&accept_button);
         user_buttons_container.add(&open_dir_button);
         
         // Add the Entry and the button box to the entry container
@@ -176,9 +176,19 @@ fn main()
 
         user_entry.connect_activate({
             let image_to_set = display_image.clone();
+            let ownable_images_vec = Rc::clone(&images_vec);
             move |entry_field|
             {
-                update_image(&image_to_set, &images_vec);
+                update_image(&image_to_set, &ownable_images_vec);
+            }
+        });
+
+        accept_button.connect_clicked({
+            let image_to_set = display_image.clone();
+            let ownable_images_vec = Rc::clone(&images_vec);
+            move |_|
+            {
+                update_image(&image_to_set, &ownable_images_vec);
             }
         });
         
